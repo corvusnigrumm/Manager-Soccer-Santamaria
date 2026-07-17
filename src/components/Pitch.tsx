@@ -15,6 +15,7 @@ interface PitchProps {
   onPlayerMove: (playerId: string, x: number, y: number) => void;
   onEditPlayer: (player: Player) => void;
   onRemoveFromLineup: (playerId: string) => void;
+  onDropPlayer: (playerId: string, x: number, y: number) => void;
   onClear: () => void;
   onUndo: () => void;
 }
@@ -32,12 +33,14 @@ export const Pitch: React.FC<PitchProps> = ({
   onPlayerMove,
   onEditPlayer,
   onRemoveFromLineup,
+  onDropPlayer,
   onClear,
   onUndo,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
@@ -187,41 +190,59 @@ export const Pitch: React.FC<PitchProps> = ({
     document.addEventListener('pointerup', handlePointerUp);
   };
 
-  const getThemeStyles = () => {
+  // ── Drag from pitch back to bench ──
+  const handleDragStartFromPitch = (e: React.DragEvent<HTMLDivElement>, playerId: string) => {
+    e.dataTransfer.setData('text/player-id', playerId);
+    e.dataTransfer.setData('text/from-pitch', 'true');
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  // ── Drag & Drop handlers (receiving players from the bench) ──
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const playerId = e.dataTransfer.getData('text/player-id');
+    if (!playerId) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+    const rawY = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const x = Math.max(4, Math.min(96, rawX));
+    const y = Math.max(4, Math.min(96, rawY));
+
+    onDropPlayer(playerId, x, y);
+  };
+
+  const getThemeOverlay = () => {
     switch (pitchTheme) {
       case 'night':
-        return {
-          containerBg: 'radial-gradient(circle at center, #091a10 0%, #050f09 100%)',
-          linesColor: 'rgba(255, 255, 255, 0.35)',
-          useImage: false,
-          imgSrc: '',
-        };
+        return 'rgba(5, 20, 10, 0.55)';
       case 'tactical':
-        return {
-          containerBg: '#1c1d21',
-          linesColor: 'rgba(255, 255, 255, 0.2)',
-          useImage: false,
-          imgSrc: '',
-        };
+        return 'rgba(28, 29, 33, 0.65)';
       case 'neon':
-        return {
-          containerBg: '#020617',
-          linesColor: '#06b6d4',
-          useImage: false,
-          imgSrc: '',
-        };
+        return 'rgba(2, 6, 23, 0.60)';
       case 'classic':
       default:
-        return {
-          containerBg: '#416656',
-          linesColor: 'rgba(255, 255, 255, 0.65)',
-          useImage: true,
-          imgSrc: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAgKsyHd1qDSTzy-qU6IVVtAkaaogSFvNz2ETUbQ1lzLJxXm6WrzKem7n6bR6NuDXVyCZNfy18QTh3W6QVx7f0HPTlrhKgusCJ3xBdpZcnD0NO3e-fkHEHSno644lPzd0VSVDPMMzcGPipY1weygTPTJvzQv2t62YwdCBPaWrR1iAehndrG9QdbJ07oMLTgVvehBYpnSB8ERpr1JNjRb1S4nBRIRmpshO5gkW0Yzn11z4w4RIj5IeOoYAeYHgMlJgbyMTJqChGZu4Lv',
-        };
+        return 'transparent';
     }
   };
 
-  const theme = getThemeStyles();
+  const overlayColor = getThemeOverlay();
 
   return (
     <main className="flex-1 bg-surface-container-low p-md flex flex-col relative overflow-hidden h-full">
@@ -229,36 +250,44 @@ export const Pitch: React.FC<PitchProps> = ({
       <div 
         ref={containerRef}
         id="soccer-pitch"
-        className="flex-1 rounded-xl relative shadow-sm border border-outline-variant overflow-hidden flex items-center justify-center"
+        className="flex-1 rounded-xl relative shadow-sm border border-outline-variant overflow-hidden"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         style={{
-          background: theme.containerBg,
+          background: '#1a3a28',
+          outline: isDragOver ? '3px dashed #4ade80' : 'none',
+          outlineOffset: '-4px',
+          transition: 'outline 0.15s ease',
         }}
       >
-        {/* Pitch Background Image */}
-        {theme.useImage && theme.imgSrc && (
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <img 
-              src={theme.imgSrc} 
-              alt="Soccer pitch background" 
-              className="w-full h-full object-cover" 
-            />
-          </div>
+        {/* PLANTILLA CANCHA image – always shown as base */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <img
+            src="/PLANTILLA CANCHA.png"
+            alt="Cancha de fútbol"
+            className="w-full h-full object-fill"
+            draggable={false}
+          />
+        </div>
+
+        {/* Theme colour overlay */}
+        {overlayColor !== 'transparent' && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ backgroundColor: overlayColor, mixBlendMode: 'multiply' }}
+          />
         )}
 
-        {/* Soccer Field Lines SVG Overlay */}
-        <svg 
-          className="absolute inset-4 w-[calc(100%-32px)] h-[calc(100%-32px)] pointer-events-none text-white" 
-          preserveAspectRatio="none"
-          style={{ color: theme.linesColor }}
-        >
-          <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
-          <line x1="50%" y1="0" x2="50%" y2="100%" stroke="currentColor" strokeWidth="2"></line>
-          <circle cx="50%" cy="50%" r="15%" fill="none" stroke="currentColor" strokeWidth="2"></circle>
-          <rect x="0" y="20%" width="16.5%" height="60%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
-          <rect x="83.5%" y="20%" width="16.5%" height="60%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
-          <rect x="0" y="35%" width="5.5%" height="30%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
-          <rect x="94.5%" y="35%" width="5.5%" height="30%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
-        </svg>
+        {/* Drop zone hint */}
+        {isDragOver && (
+          <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+            <div className="bg-black/60 text-white rounded-2xl px-6 py-3 font-semibold text-sm shadow-xl border border-green-400/60 flex items-center gap-2">
+              <span className="material-symbols-outlined text-green-400">sports_soccer</span>
+              Suelta para colocar en la cancha
+            </div>
+          </div>
+        )}
 
         {/* Chalkboard Drawing Canvas Overlay */}
         <canvas
@@ -292,6 +321,7 @@ export const Pitch: React.FC<PitchProps> = ({
                 onPointerDown={handlePlayerPointerDown}
                 onEdit={onEditPlayer}
                 onRemoveFromLineup={onRemoveFromLineup}
+                onDragStartFromPitch={handleDragStartFromPitch}
                 isDrawingMode={isDrawingMode}
               />
             );
@@ -300,8 +330,8 @@ export const Pitch: React.FC<PitchProps> = ({
 
         {/* Empty pitch state helper text */}
         {team.lineup.length === 0 && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 text-white/50 text-center font-semibold text-sm max-w-[280px]">
-            La cancha está vacía.<br/>Selecciona una formación o arrastra jugadores desde la banca en el panel lateral.
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 text-white/70 text-center font-semibold text-sm max-w-[280px] bg-black/40 rounded-xl px-4 py-3">
+            La cancha está vacía.<br/>Selecciona una formación o arrastra jugadores desde la banca.
           </div>
         )}
       </div>

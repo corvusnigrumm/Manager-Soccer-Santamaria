@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import type { Player, Team, DrawingStroke } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { FORMATION_PRESETS } from './utils/formations';
+import { FORMATION_PRESETS, loadCustomFormations } from './utils/formations';
 import { Pitch } from './components/Pitch';
 import { Sidebar } from './components/Sidebar';
 import { PlayerModal } from './components/PlayerModal';
@@ -213,7 +213,8 @@ export default function App() {
 
   // FORMATION PRESET APPLICATIONS
   const handleApplyPreset = (presetName: string) => {
-    const preset = FORMATION_PRESETS[presetName];
+    // Look up built-in presets first, then custom ones stored in localStorage
+    const preset = FORMATION_PRESETS[presetName] ?? loadCustomFormations()[presetName];
     if (!preset) return;
 
     const playersByPos = {
@@ -236,24 +237,14 @@ export default function App() {
 
       if (matchedPlayer) {
         usedIds.add(matchedPlayer.id);
-        // Switch X and Y for horizontal field layout in visual template
-        // Preset positions are originally styled for vertical field (y=goal line).
-        // Let's adapt preset coordinates to match our horizontal orientation:
-        // Local: GK is left (X=8), Defenders are X=25, Midfielders X=50, Forwards X=75.
-        // We map the preset y percentage to our X, and preset x percentage to our Y!
-        // original y (from GK=88 at bottom to FW=20 at top) translates to X:
-        // GK (y=88) -> X=8
-        // DF (y=70-74) -> X=25
-        // MF (y=48-58) -> X=50
-        // FW (y=20-25) -> X=75
+        // Map preset vertical coordinates to horizontal field layout:
+        // GK (y≈88) -> X=8 | DF (y≈70) -> X=25 | MF (y≈50) -> X=50 | FW (y≈20) -> X=75
         let relativeX = 50;
         if (pos.defaultPos === 'GK') relativeX = 8;
         else if (pos.defaultPos === 'DF') relativeX = 25;
         else if (pos.defaultPos === 'MF') relativeX = 50;
         else if (pos.defaultPos === 'FW') relativeX = 75;
 
-        // Spread Y according to original X value (left/right)
-        // Original X: 15 to 85 -> translates to Y: 15% to 85%
         const relativeY = pos.x;
 
         newLineup.push({
@@ -268,6 +259,27 @@ export default function App() {
       lineup: newLineup,
       formationName: presetName,
     });
+  };
+
+  // DROP PLAYER FROM BENCH ONTO PITCH
+  const handleDropPlayer = (playerId: string, x: number, y: number) => {
+    const isAlreadyOnPitch = activeTeam.lineup.some((pos) => pos.playerId === playerId);
+    if (isAlreadyOnPitch) {
+      // Player already on pitch – just move them
+      const updatedLineup = activeTeam.lineup.map((pos) =>
+        pos.playerId === playerId ? { ...pos, x, y } : pos
+      );
+      updateTeamDetails(activeTeam.id, { lineup: updatedLineup, formationName: 'Personalizado' });
+      return;
+    }
+
+    if (activeTeam.lineup.length >= 11) {
+      alert('Ya tienes 11 jugadores en el campo. Envía a uno a la banca antes de colocar a otro.');
+      return;
+    }
+
+    const updatedLineup = [...activeTeam.lineup, { playerId, x, y }];
+    updateTeamDetails(activeTeam.id, { lineup: updatedLineup, formationName: 'Personalizado' });
   };
 
   const handleClearDrawings = () => {
@@ -395,6 +407,7 @@ export default function App() {
           onPlayerMove={handlePlayerMove}
           onEditPlayer={handleEditPlayerClick}
           onRemoveFromLineup={handleRemoveFromLineup}
+          onDropPlayer={handleDropPlayer}
           onClear={handleClearDrawings}
           onUndo={handleUndoDrawing}
         />
@@ -426,6 +439,7 @@ export default function App() {
           onUpdateTeamDetails={updateTeamDetails}
           onExportData={handleExportJSON}
           onImportData={handleImportJSON}
+          onRemoveFromLineup={handleRemoveFromLineup}
         />
       </div>
 
