@@ -197,8 +197,8 @@ export const Pitch: React.FC<PitchProps> = ({
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  // ── Drag & Drop handlers (receiving players from the bench) ──
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  // ── Drag & Drop handlers ──
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setIsDragOver(true);
@@ -208,7 +208,7 @@ export const Pitch: React.FC<PitchProps> = ({
     setIsDragOver(false);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
 
@@ -304,10 +304,17 @@ export const Pitch: React.FC<PitchProps> = ({
           onTouchStart={handleCanvasMouseDown}
           onTouchMove={handleCanvasMouseMove}
           onTouchEnd={handleCanvasMouseUp}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         />
 
         {/* Render Players */}
-        <div className="absolute inset-0 w-full h-full z-20" style={{ pointerEvents: isDrawingMode ? 'none' : 'auto' }}>
+        <div 
+          className="absolute inset-0 w-full h-full z-20" 
+          style={{ pointerEvents: isDrawingMode ? 'none' : 'auto' }}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
           {team.lineup.map((pos) => {
             const player = activePlayers.find((p) => p.id === pos.playerId);
             if (!player) return null;
