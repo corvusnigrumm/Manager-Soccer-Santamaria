@@ -125,6 +125,25 @@ export default function App() {
     setActiveTeamId(newId);
   };
 
+  // Create a completely empty team (no players, blank slate)
+  const handleCreateEmptyTeam = (name: string) => {
+    const newId = `team-${Math.random().toString(36).substr(2, 9)}`;
+    const curated = ['#006948','#1e3a8a','#7c3aed','#9b3e3b','#92400e','#0c4a6e','#1e1b4b','#164e63','#4c1d95'];
+    const primaryColor = curated[Math.floor(Math.random() * curated.length)];
+    const newTeam: Team = {
+      id: newId,
+      name: name.toUpperCase(),
+      players: [],
+      lineup: [],
+      formationName: '—',
+      jerseyStyle: 'solid',
+      primaryColor,
+      secondaryColor: '#ffffff',
+    };
+    setTeams((prev) => [...prev, newTeam]);
+    setActiveTeamId(newId);
+  };
+
   const handleDeleteTeam = (id: string) => {
     if (teams.length <= 1) return;
     const confirmDelete = window.confirm('¿Seguro que deseas eliminar este equipo?');
@@ -435,6 +454,7 @@ export default function App() {
           activeTeamId={activeTeamId}
           onSelectTeam={handleSelectTeam}
           onCreateTeam={handleCreateTeam}
+          onCreateEmptyTeam={handleCreateEmptyTeam}
           onDeleteTeam={handleDeleteTeam}
           onUpdateTeamDetails={updateTeamDetails}
           onExportData={handleExportJSON}

@@ -6,6 +6,7 @@ interface TeamSelectorProps {
   activeTeamId: string;
   onSelectTeam: (id: string) => void;
   onCreateTeam: (name: string) => void;
+  onCreateEmptyTeam: (name: string) => void;
   onDeleteTeam: (id: string) => void;
   onUpdateTeamDetails: (id: string, updates: Partial<Team>) => void;
   onExportData: () => void;
@@ -17,6 +18,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   activeTeamId,
   onSelectTeam,
   onCreateTeam,
+  onCreateEmptyTeam,
   onDeleteTeam,
   onUpdateTeamDetails,
   onExportData,
@@ -25,6 +27,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   const [newTeamName, setNewTeamName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [useEmpty, setUseEmpty] = useState(false);
 
   const safeTeams = Array.isArray(teams) && teams.length > 0 ? teams : [];
   const activeTeam = safeTeams.find((t) => t.id === activeTeamId) || safeTeams[0];
@@ -34,9 +37,14 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeamName.trim()) return;
-    onCreateTeam(newTeamName.trim());
+    if (useEmpty) {
+      onCreateEmptyTeam(newTeamName.trim());
+    } else {
+      onCreateTeam(newTeamName.trim());
+    }
     setNewTeamName('');
     setIsCreating(false);
+    setUseEmpty(false);
   };
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -132,6 +140,31 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
             required
             autoFocus
           />
+          {/* Empty vs template toggle */}
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setUseEmpty(false)}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                !useEmpty
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-variant/50'
+              }`}
+            >
+              Con jugadores de ejemplo
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseEmpty(true)}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                useEmpty
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-variant/50'
+              }`}
+            >
+              🆕 Plantilla vacía
+            </button>
+          </div>
           <div className="flex gap-2">
             <button type="submit" className="bg-primary text-on-primary font-label-sm text-label-sm px-3 py-1.5 rounded-lg hover:bg-primary-container transition-colors shadow-sm">
               Crear
@@ -139,7 +172,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
             <button
               type="button"
               className="bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm px-3 py-1.5 rounded-lg hover:bg-surface-variant/50 transition-colors"
-              onClick={() => setIsCreating(false)}
+              onClick={() => { setIsCreating(false); setUseEmpty(false); }}
             >
               Cancelar
             </button>

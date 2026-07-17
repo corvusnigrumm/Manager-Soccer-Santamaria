@@ -8,7 +8,6 @@ interface PlayerCardProps {
   onPointerDown: (e: React.PointerEvent<HTMLDivElement>, playerId: string) => void;
   onEdit: (player: Player) => void;
   onRemoveFromLineup: (playerId: string) => void;
-  onDragStartFromPitch?: (e: React.DragEvent<HTMLDivElement>, playerId: string) => void;
   isDrawingMode: boolean;
 }
 
@@ -35,7 +34,7 @@ const jerseyBackground = (player: Player): React.CSSProperties => {
 };
 
 export const PlayerCard: React.FC<PlayerCardProps> = ({
-  player, x, y, onPointerDown, onEdit, onRemoveFromLineup, onDragStartFromPitch, isDrawingMode,
+  player, x, y, onPointerDown, onEdit, onRemoveFromLineup, isDrawingMode,
 }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -52,16 +51,12 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         zIndex: hovered ? 100 : 10,
         gap: '3px',
       }}
-      draggable={!isDrawingMode}
-      onDragStart={!isDrawingMode && onDragStartFromPitch
-        ? (e) => onDragStartFromPitch(e, player.id)
-        : undefined}
       onPointerDown={e => { if (!isDrawingMode) onPointerDown(e, player.id); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onDoubleClick={() => onEdit(player)}
     >
-      {/* Stats Tooltip — shown above or below depending on y position */}
+      {/* Stats Tooltip */}
       {hovered && (
         <div
           className="absolute w-[210px] p-3 rounded-xl bg-surface/95 border border-outline-variant shadow-lg animate-fade-in pointer-events-none z-[200]"
@@ -104,7 +99,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
       {/* Token Circle — clean, no overlay icons inside */}
       <div
-        className="w-11 h-11 rounded-full border-[2.5px] border-white shadow-lg flex items-center justify-center font-bold transition-transform duration-150 group-hover:scale-105"
+        className="w-11 h-11 rounded-full border-[2.5px] border-white shadow-lg flex items-center justify-center font-bold transition-transform duration-150"
         style={player.photoUrl ? { backgroundColor: '#fff' } : bgStyle}
       >
         {player.photoUrl ? (
@@ -124,7 +119,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         )}
       </div>
 
-      {/* Name Label — always visible */}
+      {/* Name Label */}
       <div className="bg-black/70 text-white px-2 py-[2px] rounded-md text-[10px] font-semibold shadow-sm max-w-[80px] truncate text-center leading-tight">
         {displayName}
       </div>

@@ -56,7 +56,7 @@ export const Pitch: React.FC<PitchProps> = ({
     strokes.forEach((stroke) => {
       if (stroke.points.length < 2) return;
       ctx.beginPath();
-      
+
       const startX = (stroke.points[0].x / 100) * canvas.width;
       const startY = (stroke.points[0].y / 100) * canvas.height;
       ctx.moveTo(startX, startY);
@@ -99,7 +99,7 @@ export const Pitch: React.FC<PitchProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    
+
     let clientX = 0;
     let clientY = 0;
 
@@ -122,10 +122,7 @@ export const Pitch: React.FC<PitchProps> = ({
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawingMode) return;
-    
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+    if ('touches' in e) e.preventDefault();
 
     const pos = getCanvasMousePos(e);
     setIsDrawing(true);
@@ -141,10 +138,7 @@ export const Pitch: React.FC<PitchProps> = ({
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawingMode || !isDrawing) return;
-    
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+    if ('touches' in e) e.preventDefault();
 
     const pos = getCanvasMousePos(e);
     const latestStrokes = strokesRef.current;
@@ -155,14 +149,12 @@ export const Pitch: React.FC<PitchProps> = ({
       ...currentStroke,
       points: [...currentStroke.points, pos],
     };
-
     onStrokesChange([...latestStrokes.slice(0, -1), updatedStroke]);
   };
 
-  const handleCanvasMouseUp = () => {
-    setIsDrawing(false);
-  };
+  const handleCanvasMouseUp = () => setIsDrawing(false);
 
+  // ── Pointer-based drag for players already ON the pitch ──
   const handlePlayerPointerDown = (e: React.PointerEvent<HTMLDivElement>, playerId: string) => {
     if (isDrawingMode) return;
     e.preventDefault();
@@ -170,14 +162,11 @@ export const Pitch: React.FC<PitchProps> = ({
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const container = containerRef.current;
       if (!container) return;
-      
       const rect = container.getBoundingClientRect();
       const rawX = ((moveEvent.clientX - rect.left) / rect.width) * 100;
       const rawY = ((moveEvent.clientY - rect.top) / rect.height) * 100;
-      
       const x = Math.max(4, Math.min(96, rawX));
       const y = Math.max(4, Math.min(96, rawY));
-      
       onPlayerMove(playerId, x, y);
     };
 
@@ -190,30 +179,27 @@ export const Pitch: React.FC<PitchProps> = ({
     document.addEventListener('pointerup', handlePointerUp);
   };
 
-  // ── Drag from pitch back to bench ──
-  const handleDragStartFromPitch = (e: React.DragEvent<HTMLDivElement>, playerId: string) => {
-    e.dataTransfer.setData('text/player-id', playerId);
-    e.dataTransfer.setData('text/from-pitch', 'true');
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  // ── HTML5 Drag & Drop — ONLY for bench → pitch drops ──
+  const lineupPlayerIds = new Set(team.lineup.map(p => p.playerId));
 
-  // ── Drag & Drop handlers ──
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setIsDragOver(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
+  const handleDragLeave = () => setIsDragOver(false);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
 
     const playerId = e.dataTransfer.getData('text/player-id');
     if (!playerId) return;
+
+    // GUARD: If player is already on the pitch, ignore — pointer events handle movement
+    if (lineupPlayerIds.has(playerId)) return;
 
     const container = containerRef.current;
     if (!container) return;
@@ -230,15 +216,10 @@ export const Pitch: React.FC<PitchProps> = ({
 
   const getThemeOverlay = () => {
     switch (pitchTheme) {
-      case 'night':
-        return 'rgba(5, 20, 10, 0.55)';
-      case 'tactical':
-        return 'rgba(28, 29, 33, 0.65)';
-      case 'neon':
-        return 'rgba(2, 6, 23, 0.60)';
-      case 'classic':
-      default:
-        return 'transparent';
+      case 'night':    return 'rgba(5, 20, 10, 0.55)';
+      case 'tactical': return 'rgba(28, 29, 33, 0.65)';
+      case 'neon':     return 'rgba(2, 6, 23, 0.60)';
+      default:         return 'transparent';
     }
   };
 
@@ -246,8 +227,7 @@ export const Pitch: React.FC<PitchProps> = ({
 
   return (
     <main className="flex-1 bg-surface-container-low p-md flex flex-col relative overflow-hidden h-full">
-      {/* Soccer Pitch Canvas Card */}
-      <div 
+      <div
         ref={containerRef}
         id="soccer-pitch"
         className="flex-1 rounded-xl relative shadow-sm border border-outline-variant overflow-hidden"
@@ -261,7 +241,7 @@ export const Pitch: React.FC<PitchProps> = ({
           transition: 'outline 0.15s ease',
         }}
       >
-        {/* PLANTILLA CANCHA image – always shown as base */}
+        {/* Field image */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img
             src="/PLANTILLA CANCHA.png"
@@ -271,7 +251,7 @@ export const Pitch: React.FC<PitchProps> = ({
           />
         </div>
 
-        {/* Theme colour overlay */}
+        {/* Theme overlay */}
         {overlayColor !== 'transparent' && (
           <div
             className="absolute inset-0 pointer-events-none"
@@ -289,13 +269,14 @@ export const Pitch: React.FC<PitchProps> = ({
           </div>
         )}
 
-        {/* Chalkboard Drawing Canvas Overlay */}
+        {/* Drawing canvas — passes drag events up to the pitch container */}
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full z-10"
           style={{
             cursor: isDrawingMode ? 'crosshair' : 'default',
             touchAction: 'none',
+            pointerEvents: isDragOver ? 'none' : 'auto',
           }}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
@@ -304,21 +285,16 @@ export const Pitch: React.FC<PitchProps> = ({
           onTouchStart={handleCanvasMouseDown}
           onTouchMove={handleCanvasMouseMove}
           onTouchEnd={handleCanvasMouseUp}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
         />
 
-        {/* Render Players */}
-        <div 
-          className="absolute inset-0 w-full h-full z-20" 
+        {/* Players layer */}
+        <div
+          className="absolute inset-0 w-full h-full z-20"
           style={{ pointerEvents: isDrawingMode ? 'none' : 'auto' }}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
         >
           {team.lineup.map((pos) => {
             const player = activePlayers.find((p) => p.id === pos.playerId);
             if (!player) return null;
-
             return (
               <PlayerCard
                 key={player.id}
@@ -328,14 +304,12 @@ export const Pitch: React.FC<PitchProps> = ({
                 onPointerDown={handlePlayerPointerDown}
                 onEdit={onEditPlayer}
                 onRemoveFromLineup={onRemoveFromLineup}
-                onDragStartFromPitch={handleDragStartFromPitch}
                 isDrawingMode={isDrawingMode}
               />
             );
           })}
         </div>
 
-        {/* Empty pitch state helper text */}
         {team.lineup.length === 0 && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 text-white/70 text-center font-semibold text-sm max-w-[280px] bg-black/40 rounded-xl px-4 py-3">
             La cancha está vacía.<br/>Selecciona una formación o arrastra jugadores desde la banca.
@@ -343,9 +317,9 @@ export const Pitch: React.FC<PitchProps> = ({
         )}
       </div>
 
-      {/* Bottom Navigation / Tools Bar */}
+      {/* Bottom Tools Bar */}
       <nav className="mt-md bg-surface shadow-sm rounded-xl px-lg py-sm flex justify-center gap-xl border border-outline-variant shrink-0 z-30">
-        <button 
+        <button
           onClick={() => setIsDrawingMode(!isDrawingMode)}
           className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all active:scale-95 duration-150 w-16 ${
             isDrawingMode ? 'text-primary bg-secondary-container/40' : 'text-on-surface-variant hover:bg-surface-container-highest'
@@ -354,8 +328,8 @@ export const Pitch: React.FC<PitchProps> = ({
           <span className="material-symbols-outlined text-2xl">edit</span>
           <span className="font-label-sm text-label-sm mt-1">Lápiz</span>
         </button>
-        
-        <button 
+
+        <button
           onClick={onUndo}
           disabled={strokes.length === 0}
           className="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all active:scale-95 duration-150 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed w-16"
@@ -364,7 +338,7 @@ export const Pitch: React.FC<PitchProps> = ({
           <span className="font-label-sm text-label-sm mt-1">Deshacer</span>
         </button>
 
-        <button 
+        <button
           onClick={onClear}
           disabled={strokes.length === 0}
           className="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all active:scale-95 duration-150 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed w-16"

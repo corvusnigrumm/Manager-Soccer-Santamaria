@@ -29,6 +29,7 @@ interface SidebarProps {
   activeTeamId: string;
   onSelectTeam: (id: string) => void;
   onCreateTeam: (name: string) => void;
+  onCreateEmptyTeam: (name: string) => void;
   onDeleteTeam: (id: string) => void;
   onUpdateTeamDetails: (id: string, updates: Partial<Team>) => void;
   onExportData: () => void;
@@ -45,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pitchTheme, setPitchTheme,
   isDrawingMode, setIsDrawingMode, brushColor, setBrushColor, brushWidth, setBrushWidth,
   onClearDrawings, onUndoDrawing, strokesCount,
-  teams, activeTeamId, onSelectTeam, onCreateTeam, onDeleteTeam, onUpdateTeamDetails, onExportData, onImportData,
+  teams, activeTeamId, onSelectTeam, onCreateTeam, onCreateEmptyTeam, onDeleteTeam, onUpdateTeamDetails, onExportData, onImportData,
   onRemoveFromLineup,
 }) => {
   const [mainTab, setMainTab] = useState<MainTab>('squad');
@@ -205,6 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <TeamSelector
               teams={teams} activeTeamId={activeTeamId}
               onSelectTeam={onSelectTeam} onCreateTeam={onCreateTeam}
+              onCreateEmptyTeam={onCreateEmptyTeam}
               onDeleteTeam={onDeleteTeam} onUpdateTeamDetails={onUpdateTeamDetails}
               onExportData={onExportData} onImportData={onImportData}
             />
