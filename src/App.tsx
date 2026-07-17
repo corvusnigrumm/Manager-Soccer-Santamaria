@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Camera } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import type { Player, Team, DrawingStroke } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { FORMATION_PRESETS } from './utils/formations';
 import { Pitch } from './components/Pitch';
 import { Sidebar } from './components/Sidebar';
-
 import { PlayerModal } from './components/PlayerModal';
 
 // Legendary Initial Players List
@@ -34,37 +32,37 @@ const INITIAL_PLAYERS: Player[] = [
 ];
 
 const DEFAULT_LINEUP = [
-  { playerId: 'p1', x: 50, y: 88 },  // Casillas (GK)
-  { playerId: 'p6', x: 85, y: 70 },  // Alves (LD)
-  { playerId: 'p2', x: 62, y: 72 },  // Ramos (DFC)
-  { playerId: 'p3', x: 38, y: 72 },  // Puyol (DFC)
-  { playerId: 'p5', x: 15, y: 70 },  // Alba (LI)
-  { playerId: 'p7', x: 50, y: 58 },  // Busquets (MCD)
-  { playerId: 'p9', x: 65, y: 52 },  // Xavi (MC)
-  { playerId: 'p8', x: 35, y: 52 },  // Iniesta (MC)
-  { playerId: 'p10', x: 80, y: 25 }, // Ronaldinho (ED)
-  { playerId: 'p11', x: 50, y: 20 }, // Messi (DC)
-  { playerId: 'p12', x: 20, y: 25 }, // Cristiano (EI)
+  { playerId: 'p1', x: 8, y: 50 },   // Casillas (GK) - left aligned for horizontal view
+  { playerId: 'p5', x: 25, y: 20 },  // Alba (LI)
+  { playerId: 'p3', x: 25, y: 40 },  // Puyol (DFC)
+  { playerId: 'p2', x: 25, y: 60 },  // Ramos (DFC)
+  { playerId: 'p6', x: 25, y: 80 },  // Alves (LD)
+  { playerId: 'p8', x: 50, y: 30 },  // Iniesta (MC)
+  { playerId: 'p7', x: 50, y: 50 },  // Busquets (MCD)
+  { playerId: 'p9', x: 50, y: 70 },  // Xavi (MC)
+  { playerId: 'p12', x: 75, y: 20 }, // Cristiano (EI)
+  { playerId: 'p11', x: 75, y: 50 }, // Messi (DC)
+  { playerId: 'p10', x: 75, y: 80 }, // Ronaldinho (ED)
 ];
 
 const INITIAL_TEAM: Team = {
   id: 'team-classic',
-  name: 'Dream Team F.C.',
+  name: 'COLOMBIA',
   players: INITIAL_PLAYERS,
   lineup: DEFAULT_LINEUP,
   formationName: '4-3-3',
   jerseyStyle: 'striped',
-  primaryColor: '#1e3a8a', // Dark blue
-  secondaryColor: '#ef4444', // Red
+  primaryColor: '#006948',
+  secondaryColor: '#ffffff',
 };
 
 export default function App() {
   // App states
   const [teams, setTeams] = useLocalStorage<Team[]>('tactix_teams', [INITIAL_TEAM]);
   const [activeTeamId, setActiveTeamId] = useLocalStorage<string>('tactix_active_team_id', 'team-classic');
-  const [pitchTheme, setPitchTheme] = useLocalStorage<'classic' | 'night' | 'tactical' | 'neon'>('tactix_pitch_theme', 'night');
+  const [pitchTheme, setPitchTheme] = useLocalStorage<'classic' | 'night' | 'tactical' | 'neon'>('tactix_pitch_theme', 'classic');
 
-  // Drawing strokes (saved per team to maintain visual state)
+  // Drawing strokes
   const [strokes, setStrokes] = useState<DrawingStroke[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [brushColor, setBrushColor] = useState('#ffffff');
@@ -106,19 +104,18 @@ export default function App() {
   // TEAM ACTIONS
   const handleSelectTeam = (id: string) => {
     setActiveTeamId(id);
-    setIsDrawingMode(false); // Disable drawing when switching team
+    setIsDrawingMode(false);
   };
 
   const handleCreateTeam = (name: string) => {
     const newId = `team-${Math.random().toString(36).substr(2, 9)}`;
-    // BUG-12 fix: use a curated palette to avoid pale/invisible colors on the pitch
-    const curated = ['#1e3a8a','#7c3aed','#065f46','#92400e','#881337','#0c4a6e','#1e1b4b','#164e63','#4c1d95'];
+    const curated = ['#006948','#1e3a8a','#7c3aed','#9b3e3b','#92400e','#0c4a6e','#1e1b4b','#164e63','#4c1d95'];
     const primaryColor = curated[Math.floor(Math.random() * curated.length)];
     const newTeam: Team = {
       id: newId,
-      name,
-      players: [...INITIAL_PLAYERS], // Start with legendary template pool
-      lineup: [...DEFAULT_LINEUP], // Standard 4-3-3 populated lineup
+      name: name.toUpperCase(),
+      players: [...INITIAL_PLAYERS],
+      lineup: [...DEFAULT_LINEUP],
       formationName: '4-3-3',
       jerseyStyle: 'solid',
       primaryColor,
@@ -133,7 +130,6 @@ export default function App() {
     const confirmDelete = window.confirm('¿Seguro que deseas eliminar este equipo?');
     if (!confirmDelete) return;
 
-    // Clear drawings for deleted team
     window.localStorage.removeItem(`tactix_strokes_${id}`);
     
     const remainingTeams = teams.filter((t) => t.id !== id);
@@ -159,10 +155,8 @@ export default function App() {
     let updatedPlayers: Player[];
 
     if (playerExists) {
-      // Edit existing
       updatedPlayers = activeTeam.players.map((p) => (p.id === player.id ? player : p));
     } else {
-      // Create new
       updatedPlayers = [...activeTeam.players, player];
     }
 
@@ -173,9 +167,7 @@ export default function App() {
     const confirmDelete = window.confirm('¿Seguro que deseas eliminar este jugador?');
     if (!confirmDelete) return;
 
-    // Remove from roster
     const updatedPlayers = activeTeam.players.filter((p) => p.id !== playerId);
-    // Remove from lineup
     const updatedLineup = activeTeam.lineup.filter((pos) => pos.playerId !== playerId);
 
     updateTeamDetails(activeTeam.id, {
@@ -188,24 +180,20 @@ export default function App() {
     const isCurrentlyActive = activeTeam.lineup.some((pos) => pos.playerId === playerId);
     
     if (isCurrentlyActive) {
-      // Remove from field
       const updatedLineup = activeTeam.lineup.filter((pos) => pos.playerId !== playerId);
       updateTeamDetails(activeTeam.id, { lineup: updatedLineup, formationName: 'Personalizado' });
     } else {
-      // Check for max 11 players limit
       if (activeTeam.lineup.length >= 11) {
         alert('Ya tienes 11 jugadores en el campo. Envía a uno a la banca antes de colocar a otro.');
         return;
       }
 
-      // BUG-13 fix: stagger positions in a grid to avoid piling everyone at (50, 50)
       const count = activeTeam.lineup.length;
       const rowSize = 3;
       const col = count % rowSize;
       const row = Math.floor(count / rowSize);
-      // Spread across the middle third of the pitch (x: 25-75, y: 30-70)
-      const x = 25 + col * 25;
-      const y = 30 + row * 13;
+      const x = 30 + row * 15;
+      const y = 20 + col * 30;
       const updatedLineup = [...activeTeam.lineup, { playerId, x, y }];
       updateTeamDetails(activeTeam.id, { lineup: updatedLineup, formationName: 'Personalizado' });
     }
@@ -228,7 +216,6 @@ export default function App() {
     const preset = FORMATION_PRESETS[presetName];
     if (!preset) return;
 
-    // Filter players in roster by position to match preset needs
     const playersByPos = {
       GK: activeTeam.players.filter((p) => p.position === 'GK'),
       DF: activeTeam.players.filter((p) => p.position === 'DF'),
@@ -239,23 +226,40 @@ export default function App() {
     const usedIds = new Set<string>();
     const newLineup: { playerId: string; x: number; y: number }[] = [];
 
-    // Assign positions
     preset.positions.forEach((pos) => {
       const posType = pos.defaultPos;
-      // Get first unused player for matching position
       let matchedPlayer = playersByPos[posType].find((p) => !usedIds.has(p.id));
 
-      // If no matching player left, search in all roster players
       if (!matchedPlayer) {
         matchedPlayer = activeTeam.players.find((p) => !usedIds.has(p.id));
       }
 
       if (matchedPlayer) {
         usedIds.add(matchedPlayer.id);
+        // Switch X and Y for horizontal field layout in visual template
+        // Preset positions are originally styled for vertical field (y=goal line).
+        // Let's adapt preset coordinates to match our horizontal orientation:
+        // Local: GK is left (X=8), Defenders are X=25, Midfielders X=50, Forwards X=75.
+        // We map the preset y percentage to our X, and preset x percentage to our Y!
+        // original y (from GK=88 at bottom to FW=20 at top) translates to X:
+        // GK (y=88) -> X=8
+        // DF (y=70-74) -> X=25
+        // MF (y=48-58) -> X=50
+        // FW (y=20-25) -> X=75
+        let relativeX = 50;
+        if (pos.defaultPos === 'GK') relativeX = 8;
+        else if (pos.defaultPos === 'DF') relativeX = 25;
+        else if (pos.defaultPos === 'MF') relativeX = 50;
+        else if (pos.defaultPos === 'FW') relativeX = 75;
+
+        // Spread Y according to original X value (left/right)
+        // Original X: 15 to 85 -> translates to Y: 15% to 85%
+        const relativeY = pos.x;
+
         newLineup.push({
           playerId: matchedPlayer.id,
-          x: pos.x,
-          y: pos.y,
+          x: relativeX,
+          y: relativeY,
         });
       }
     });
@@ -266,7 +270,6 @@ export default function App() {
     });
   };
 
-  // Tactical chalkboard controls
   const handleClearDrawings = () => {
     saveStrokes([]);
   };
@@ -281,17 +284,15 @@ export default function App() {
     if (!pitchElement) return;
 
     try {
-      // Temporarily hide quick player buttons and cursor markers
       const controls = pitchElement.querySelectorAll('.player-quick-controls') as NodeListOf<HTMLElement>;
       controls.forEach((c) => (c.style.opacity = '0'));
 
       const canvas = await html2canvas(pitchElement, {
         useCORS: true,
         backgroundColor: null,
-        scale: 2, // Retinal DPI scale
+        scale: 2,
       });
 
-      // Restore controls
       controls.forEach((c) => (c.style.opacity = ''));
 
       const dataUrl = canvas.toDataURL('image/png');
@@ -344,83 +345,89 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* Left panel: Header Navigation & Football field */}
-      <main style={mainLayoutStyle}>
-        
-        {/* Navigation Bar */}
-        <header className="glass-panel" style={navStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* App branding */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '1.5rem', background: 'rgba(16,185,129,0.15)', padding: '6px 8px', borderRadius: '10px' }}>⚽</span>
-              <div>
-                <h1 style={titleStyle}>Tactix</h1>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '-2px' }}>Soccer Formation Designer</span>
-              </div>
-            </div>
-
-            {/* BUG-8 fix: removed duplicate team selector – the Sidebar already has a full TeamSelector */}
-            <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Equipo:</span>
-              <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 700 }}>{activeTeam.name}</span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600 }}>{activeTeam.formationName}</span>
-            </div>
+    <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col overflow-hidden w-screen h-screen">
+      {/* Top Navigation */}
+      <header className="bg-surface-bright shadow-sm flex justify-between items-center px-lg w-full h-16 shrink-0 z-10 border-b border-outline-variant">
+        <div className="flex items-center gap-md">
+          <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+            sports_soccer
+          </span>
+          <div>
+            <h1 className="font-headline-md text-headline-md text-primary leading-tight">Manager Soccer Santamaría</h1>
+            <p className="font-label-sm text-label-sm text-on-surface-variant leading-tight">Arme su sueño inmundo favorito</p>
           </div>
+        </div>
+        
+        {/* Active Team display */}
+        <div className="flex items-center gap-xl hidden md:flex">
+          <div className="flex items-center gap-sm font-label-lg text-label-lg text-on-surface-variant">
+            <span>Equipo:</span>
+            <span className="font-bold text-on-surface uppercase">{activeTeam.name}</span>
+            <span className="text-primary ml-2 font-semibold">{activeTeam.formationName}</span>
+          </div>
+        </div>
 
-          {/* Export action */}
-          <button onClick={handleExportImage} className="btn btn-primary" style={{ display: 'flex', gap: '8px', whiteSpace: 'nowrap' }}>
-            <Camera size={16} />
+        {/* Header Actions */}
+        <div className="flex items-center gap-md">
+          <button 
+            onClick={handleExportImage}
+            className="bg-primary text-on-primary font-label-lg text-label-lg px-lg py-sm rounded-lg flex items-center gap-sm hover:bg-primary-container transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-sm">photo_camera</span>
             Exportar PNG
           </button>
-        </header>
-
-        {/* Tactical Pitch Wrapper */}
-        <div style={{ flex: 1, position: 'relative', width: '100%', height: 'calc(100% - 80px)' }} className="pitch-container">
-          <Pitch
-            team={activeTeam}
-            activePlayers={activeTeam.players}
-            pitchTheme={pitchTheme}
-            isDrawingMode={isDrawingMode}
-            brushColor={brushColor}
-            brushWidth={brushWidth}
-            strokes={strokes}
-            onStrokesChange={saveStrokes}
-            onPlayerMove={handlePlayerMove}
-            onEditPlayer={handleEditPlayerClick}
-            onRemoveFromLineup={handleRemoveFromLineup}
-          />
         </div>
-      </main>
+      </header>
 
-      {/* Right panel: Roster, Quick settings, Themes */}
-      <Sidebar
-        team={activeTeam}
-        onApplyPreset={handleApplyPreset}
-        onAddPlayer={handleAddPlayerClick}
-        onEditPlayer={handleEditPlayerClick}
-        onDeletePlayer={handleDeletePlayer}
-        onTogglePlayerLineup={handleTogglePlayerLineup}
-        pitchTheme={pitchTheme}
-        setPitchTheme={setPitchTheme}
-        isDrawingMode={isDrawingMode}
-        setIsDrawingMode={setIsDrawingMode}
-        brushColor={brushColor}
-        setBrushColor={setBrushColor}
-        brushWidth={brushWidth}
-        setBrushWidth={setBrushWidth}
-        onClearDrawings={handleClearDrawings}
-        onUndoDrawing={handleUndoDrawing}
-        strokesCount={strokes.length}
-        teams={teams}
-        activeTeamId={activeTeamId}
-        onSelectTeam={handleSelectTeam}
-        onCreateTeam={handleCreateTeam}
-        onDeleteTeam={handleDeleteTeam}
-        onUpdateTeamDetails={updateTeamDetails}
-        onExportData={handleExportJSON}
-        onImportData={handleImportJSON}
-      />
+      {/* Main Workspace split-screen */}
+      <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden">
+        {/* Left Side: Interactive Pitch */}
+        <Pitch
+          team={activeTeam}
+          activePlayers={activeTeam.players}
+          pitchTheme={pitchTheme}
+          isDrawingMode={isDrawingMode}
+          setIsDrawingMode={setIsDrawingMode}
+          brushColor={brushColor}
+          brushWidth={brushWidth}
+          strokes={strokes}
+          onStrokesChange={saveStrokes}
+          onPlayerMove={handlePlayerMove}
+          onEditPlayer={handleEditPlayerClick}
+          onRemoveFromLineup={handleRemoveFromLineup}
+          onClear={handleClearDrawings}
+          onUndo={handleUndoDrawing}
+        />
+
+        {/* Right Side: Control Panel Sidebar */}
+        <Sidebar
+          team={activeTeam}
+          onApplyPreset={handleApplyPreset}
+          onAddPlayer={handleAddPlayerClick}
+          onEditPlayer={handleEditPlayerClick}
+          onDeletePlayer={handleDeletePlayer}
+          onTogglePlayerLineup={handleTogglePlayerLineup}
+          pitchTheme={pitchTheme}
+          setPitchTheme={setPitchTheme}
+          isDrawingMode={isDrawingMode}
+          setIsDrawingMode={setIsDrawingMode}
+          brushColor={brushColor}
+          setBrushColor={setBrushColor}
+          brushWidth={brushWidth}
+          setBrushWidth={setBrushWidth}
+          onClearDrawings={handleClearDrawings}
+          onUndoDrawing={handleUndoDrawing}
+          strokesCount={strokes.length}
+          teams={teams}
+          activeTeamId={activeTeamId}
+          onSelectTeam={handleSelectTeam}
+          onCreateTeam={handleCreateTeam}
+          onDeleteTeam={handleDeleteTeam}
+          onUpdateTeamDetails={updateTeamDetails}
+          onExportData={handleExportJSON}
+          onImportData={handleImportJSON}
+        />
+      </div>
 
       {/* Player Creation & Edit Modal */}
       <PlayerModal
@@ -432,28 +439,3 @@ export default function App() {
     </div>
   );
 }
-
-/* Styles */
-const mainLayoutStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100%',
-  padding: '16px',
-  gap: '16px',
-  overflow: 'hidden',
-};
-
-const navStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '10px 20px',
-  height: '74px',
-};
-
-const titleStyle: React.CSSProperties = {
-  fontSize: '1.25rem',
-  fontWeight: 'bold',
-  color: '#fff',
-  margin: 0,
-};

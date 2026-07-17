@@ -1,5 +1,4 @@
 import React from 'react';
-import { Pencil, Trash2, RotateCcw, Paintbrush } from 'lucide-react';
 
 interface DrawingToolsProps {
   isDrawingMode: boolean;
@@ -33,65 +32,50 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
   strokesCount,
 }) => {
   return (
-    <div className="glass-panel" style={containerStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-        <h4 style={{ fontSize: '0.9rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-          <Paintbrush size={16} className="text-primary" />
+    <div className="bg-surface rounded-xl p-md border border-outline-variant shadow-sm">
+      <div className="flex justify-between items-center mb-sm">
+        <h4 className="font-title-lg text-title-lg text-primary flex items-center gap-sm">
+          <span className="material-symbols-outlined text-primary text-xl">edit</span>
           Pizarrón Táctico
         </h4>
         <button
           onClick={() => setIsDrawingMode(!isDrawingMode)}
-          className="btn"
-          style={{
-            padding: '6px 12px',
-            fontSize: '0.8rem',
-            backgroundColor: isDrawingMode ? 'var(--accent-primary)' : 'rgba(255,255,255,0.06)',
-            color: '#fff',
-            border: isDrawingMode ? 'none' : '1px solid var(--border-color)',
-          }}
+          className={`font-label-sm text-label-sm px-sm py-1.5 rounded-lg flex items-center gap-xs transition-colors border ${
+            isDrawingMode
+              ? 'bg-primary text-on-primary border-primary hover:bg-primary-container'
+              : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-variant/50'
+          }`}
         >
-          <Pencil size={12} />
-          {isDrawingMode ? 'Modo Táctico: ON' : 'Dibujo Desactivado'}
+          <span className="material-symbols-outlined text-sm">edit</span>
+          {isDrawingMode ? 'Dibujo: ON' : 'Dibujo: OFF'}
         </button>
       </div>
 
       {isDrawingMode && (
-        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="animate-fade-in flex flex-col gap-sm mt-sm">
           {/* Colors Selection */}
           <div>
-            <span className="form-label" style={{ fontSize: '0.75rem', marginBottom: '6px' }}>Color del Trazo</span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span className="font-label-sm text-label-sm text-on-surface-variant block mb-1">Color del Trazo</span>
+            <div className="flex gap-2 items-center flex-wrap">
               {COLORS.map((c) => (
                 <button
                   key={c.value}
                   onClick={() => setBrushColor(c.value)}
                   title={c.name}
                   aria-label={c.name}
-                  style={{
-                    width: '26px',
-                    height: '26px',
-                    borderRadius: '50%',
-                    backgroundColor: c.value,
-                    border: brushColor === c.value ? '2px solid #fff' : '2px solid transparent',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-                    transition: 'transform 0.1s',
-                    transform: brushColor === c.value ? 'scale(1.15)' : 'scale(1)',
-                  }}
+                  className={`w-6 h-6 rounded-full border-2 transition-transform ${
+                    brushColor === c.value ? 'border-primary scale-110' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: c.value }}
                 />
               ))}
-              {/* BUG-11 fix: custom color picker so users aren't limited to 5 preset colors */}
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} title="Color personalizado">
+              <div className="relative flex items-center" title="Color personalizado">
                 <input
                   type="color"
                   value={brushColor}
                   onChange={(e) => setBrushColor(e.target.value)}
                   aria-label="Color personalizado"
-                  style={{
-                    width: '26px', height: '26px', borderRadius: '50%',
-                    border: '2px solid rgba(255,255,255,0.3)', cursor: 'pointer',
-                    padding: 0, background: 'transparent',
-                  }}
+                  className="w-6 h-6 rounded-full border border-outline-variant cursor-pointer p-0 bg-transparent"
                 />
               </div>
             </div>
@@ -99,9 +83,9 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
 
           {/* Width Selection */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px' }}>
-              <span className="form-label" style={{ margin: 0 }}>Grosor de la Línea</span>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{brushWidth}px</span>
+            <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mb-1">
+              <span>Grosor de la Línea</span>
+              <span className="font-semibold text-primary">{brushWidth}px</span>
             </div>
             <input
               type="range"
@@ -109,49 +93,31 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
               max="10"
               value={brushWidth}
               onChange={(e) => setBrushWidth(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '4px',
-                background: 'rgba(255,255,255,0.1)',
-                cursor: 'pointer',
-                WebkitAppearance: 'none',
-                borderRadius: '2px',
-              }}
+              className="w-full h-1 bg-surface-container rounded-lg cursor-pointer accent-primary"
             />
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+          <div className="grid grid-cols-2 gap-2 mt-1">
             <button
               onClick={onUndo}
               disabled={strokesCount === 0}
-              className="btn btn-secondary"
-              style={{ padding: '6px 8px', fontSize: '0.75rem', display: 'flex', gap: '4px', justifyContent: 'center', opacity: strokesCount === 0 ? 0.4 : 1, cursor: strokesCount === 0 ? 'not-allowed' : 'pointer' }}
+              className="bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm py-1.5 rounded-lg flex items-center justify-center gap-xs hover:bg-surface-variant/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <RotateCcw size={12} />
+              <span className="material-symbols-outlined text-sm">undo</span>
               Deshacer
             </button>
             <button
               onClick={onClear}
               disabled={strokesCount === 0}
-              className="btn btn-secondary"
-              style={{ padding: '6px 8px', fontSize: '0.75rem', display: 'flex', gap: '4px', justifyContent: 'center', color: '#ef4444', opacity: strokesCount === 0 ? 0.4 : 1, cursor: strokesCount === 0 ? 'not-allowed' : 'pointer' }}
+              className="bg-surface border border-outline-variant text-error font-label-sm text-label-sm py-1.5 rounded-lg flex items-center justify-center gap-xs hover:bg-error-container/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Trash2 size={12} />
+              <span className="material-symbols-outlined text-sm">layers_clear</span>
               Limpiar
             </button>
-          </div>
-          
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', marginTop: '2px' }}>
-            * Haz clic y arrastra sobre la cancha para trazar movimientos y flechas tácticas.
           </div>
         </div>
       )}
     </div>
   );
-};
-
-const containerStyle: React.CSSProperties = {
-  padding: '16px',
-  marginBottom: '16px',
 };

@@ -1,203 +1,143 @@
 import React, { useState } from 'react';
-import { Edit2, ArrowDownToLine } from 'lucide-react';
-import type { Player } from '../types';
+  import type { Player } from '../types';
 
-interface PlayerCardProps {
-  player: Player;
-  x: number;
-  y: number;
-  onPointerDown: (e: React.PointerEvent<HTMLDivElement>, playerId: string) => void;
-  onEdit: (player: Player) => void;
-  onRemoveFromLineup: (playerId: string) => void;
-  isDrawingMode: boolean;
-}
-
-const getStatColor = (v: number) => v >= 80 ? '#34d399' : v >= 60 ? '#fbbf24' : '#f87171';
-
-/** Builds the jersey CSS background based on design & colors */
-const jerseyBackground = (player: Player): React.CSSProperties => {
-  const c1 = player.avatarColor;
-  const c2 = player.secondaryJerseyColor ?? '#ffffff';
-
-  switch (player.jerseyDesign) {
-    case 'striped':
-      return {
-        backgroundImage: `repeating-linear-gradient(90deg, ${c1} 0px, ${c1} 10px, ${c2} 10px, ${c2} 20px)`,
-      };
-    case 'halves':
-      return { backgroundImage: `linear-gradient(90deg, ${c1} 50%, ${c2} 50%)` };
-    case 'gradient':
-      return { backgroundImage: `linear-gradient(135deg, ${c1}, ${c2})` };
-    case 'chevron':
-      return { backgroundImage: `linear-gradient(160deg, ${c1} 55%, ${c2} 55%)` };
-    default: // solid
-      return { backgroundColor: c1 };
+  interface PlayerCardProps {
+    player: Player;
+    x: number;
+    y: number;
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>, playerId: string) => void;
+    onEdit: (player: Player) => void;
+    onRemoveFromLineup: (playerId: string) => void;
+    isDrawingMode: boolean;
   }
-};
 
-export const PlayerCard: React.FC<PlayerCardProps> = ({
-  player, x, y, onPointerDown, onEdit, onRemoveFromLineup, isDrawingMode,
-}) => {
-  const [hovered, setHovered] = useState(false);
+  const getStatColor = (v: number) => v >= 80 ? 'text-primary' : v >= 60 ? 'text-secondary' : 'text-error';
 
-  const bgStyle = jerseyBackground(player);
+  const jerseyBackground = (player: Player): React.CSSProperties => {
+    const c1 = player.avatarColor;
+    const c2 = player.secondaryJerseyColor ?? '#ffffff';
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: `${x}%`,
-        top: `${y}%`,
-        transform: 'translate(-50%, -50%)',
-        cursor: isDrawingMode ? 'default' : 'grab',
-        zIndex: hovered ? 100 : 10,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
-      onPointerDown={e => { if (!isDrawingMode) onPointerDown(e, player.id); }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onDoubleClick={() => onEdit(player)}
-    >
-      {/* ── Stats tooltip ── */}
-      {hovered && (
-        // BUG-6 fix: show tooltip below token when player is near the top of the pitch
-        <div className="glass-panel animate-fade-in" style={{
-          ...tooltipStyle,
-          ...(y < 35 ? { bottom: 'auto', top: '120%' } : {}),
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 7 }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{player.name}</div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>#{player.number} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</div>
-            </div>
-            <div style={{ background: 'rgba(16,185,129,0.15)', borderRadius: 8, padding: '3px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>OVR</div>
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#34d399', lineHeight: 1 }}>{player.rating}</div>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 5, textAlign: 'center' }}>
-            {(['pace','shooting','passing','dribbling','defending','physical'] as const).map(k => (
-              <div key={k} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '5px 2px' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: getStatColor(player.stats[k]) }}>{player.stats[k]}</div>
-                <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{k.slice(0,3)}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6, fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-            <span>Pie: {player.preferredFoot}</span>
-            <span>Doble clic para editar</span>
-          </div>
-        </div>
-      )}
+    switch (player.jerseyDesign) {
+      case 'striped':
+        return {
+          backgroundImage: `repeating-linear-gradient(90deg, ${c1} 0px, ${c1} 10px, ${c2} 10px, ${c2} 20px)`,
+        };
+      case 'halves':
+        return { backgroundImage: `linear-gradient(90deg, ${c1} 50%, ${c2} 50%)` };
+      case 'gradient':
+        return { backgroundImage: `linear-gradient(135deg, ${c1}, ${c2})` };
+      case 'chevron':
+        return { backgroundImage: `linear-gradient(160deg, ${c1} 55%, ${c2} 55%)` };
+      default: // solid
+        return { backgroundColor: c1 };
+    }
+  };
 
-      {/* ── Jersey token ── */}
-      <div style={{ ...tokenStyle, ...bgStyle, border: `2.5px solid ${player.secondaryJerseyColor ?? '#fff'}` }}>
-        {/* Player photo (clips perfectly to circle) */}
-        {player.photoUrl ? (
-          <img
-            src={player.photoUrl}
-            alt={player.name}
-            style={{
-              width: '100%', height: '100%', objectFit: 'cover',
-              borderRadius: '50%', display: 'block',
-            }}
-            draggable={false}
-          />
-        ) : (
-          <span style={{ color: player.textColor, fontWeight: 800, fontSize: '1.2rem', userSelect: 'none' }}>
-            {player.number}
-          </span>
-        )}
+  export const PlayerCard: React.FC<PlayerCardProps> = ({
+    player, x, y, onPointerDown, onEdit, onRemoveFromLineup, isDrawingMode,
+  }) => {
+    const [hovered, setHovered] = useState(false);
 
-        {/* Overall rating dot */}
-        <div style={ratingDotStyle}>
-          {player.rating}
-        </div>
+    const bgStyle = jerseyBackground(player);
+    const displayName = player.name.split(' ').pop() || player.name;
 
-        {/* Quick-action strip on hover */}
+    return (
+      <div
+        className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group select-none touch-none"
+        style={{
+          left: `${x}%`,
+          top: `${y}%`,
+          cursor: isDrawingMode ? 'default' : 'grab',
+          zIndex: hovered ? 100 : 10,
+        }}
+        onPointerDown={e => { if (!isDrawingMode) onPointerDown(e, player.id); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onDoubleClick={() => onEdit(player)}
+      >
+        {/* Stats Tooltip */}
         {hovered && (
-          <div style={quickActionsStyle}>
-            <button
-              onClick={e => { e.stopPropagation(); onEdit(player); }}
-              title="Editar"
-              style={quickBtnStyle}
-            >
-              <Edit2 size={9} />
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onRemoveFromLineup(player.id); }}
-              title="Enviar a banca"
-              style={{ ...quickBtnStyle, color: '#ef4444' }}
-            >
-              <ArrowDownToLine size={9} />
-            </button>
+          <div 
+            className="absolute bottom-[125%] w-[210px] p-3 rounded-xl bg-surface/95 border border-outline-variant shadow-lg animate-fade-in pointer-events-none z-[200]"
+            style={{
+              ...(y < 35 ? { bottom: 'auto', top: '125%' } : {}),
+            }}
+          >
+            <div className="flex justify-between items-center mb-2 border-b border-outline-variant/30 pb-2">
+              <div className="min-w-0">
+                <div className="font-bold text-sm text-on-surface truncate pr-1">{player.name}</div>
+                <div className="text-[10px] text-on-surface-variant">
+                  #{player.number} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}
+                </div>
+              </div>
+              <div className="bg-secondary-container/30 border border-outline-variant/40 rounded-lg px-2 py-0.5 text-center shrink-0">
+                <div className="text-[8px] text-on-surface-variant font-semibold">OVR</div>
+                <div className="text-sm font-extrabold text-primary leading-none">{player.rating}</div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              {(['pace','shooting','passing','dribbling','defending','physical'] as const).map(k => (
+                <div key={k} className="bg-surface-container-low rounded-md py-1 px-0.5 border border-outline-variant/10">
+                  <div className={`text-xs font-bold ${getStatColor(player.stats[k])}`}>{player.stats[k]}</div>
+                  <div className="text-[8px] text-on-surface-variant font-semibold uppercase">{k.slice(0,3)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between mt-2 border-t border-outline-variant/20 pt-1.5 text-[9px] text-on-surface-variant font-semibold">
+              <span>Pie: {player.preferredFoot}</span>
+              <span>Doble clic para editar</span>
+            </div>
           </div>
         )}
+
+        {/* Token Circle (Jersey representation) */}
+        <div 
+          className="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center font-bold text-white group-hover:scale-105 transition-all relative overflow-hidden"
+          style={player.photoUrl ? { backgroundColor: '#fff' } : bgStyle}
+        >
+          {player.photoUrl ? (
+            <img
+              src={player.photoUrl}
+              alt={player.name}
+              className="w-full h-full object-cover rounded-full"
+              draggable={false}
+            />
+          ) : (
+            <span 
+              className="font-extrabold text-sm select-none"
+              style={{ color: player.textColor }}
+            >
+              {player.number}
+            </span>
+          )}
+
+          {/* Quick Edit/Banca options on hover */}
+          {hovered && !isDrawingMode && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 pointer-events-auto">
+              <button
+                onClick={e => { e.stopPropagation(); onEdit(player); }}
+                title="Editar"
+                className="text-white hover:text-primary-fixed transition-colors p-0.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">edit</span>
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); onRemoveFromLineup(player.id); }}
+                title="Enviar a banca"
+                className="text-white hover:text-error-container transition-colors p-0.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Name Label */}
+        <div className="bg-surface/90 text-on-surface px-2 py-0.5 rounded text-[11px] font-semibold shadow-sm max-w-[80px] truncate text-center border border-outline-variant/20">
+          {displayName}
+        </div>
       </div>
-
-      {/* Name label */}
-      {/* BUG-10 fix: show last word of name (typically surname) for cleaner pitch display */}
-      <div style={nameLabelStyle}>
-        {player.name.split(' ').pop()}
-      </div>
-    </div>
-  );
-};
-
-// ─── Styles ───
-const tokenStyle: React.CSSProperties = {
-  width: 50, height: 50, borderRadius: '50%',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  overflow: 'hidden', position: 'relative',
-  boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
-  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-};
-
-const nameLabelStyle: React.CSSProperties = {
-  marginTop: 5,
-  background: 'rgba(5,10,20,0.82)',
-  border: '1px solid rgba(255,255,255,0.06)',
-  padding: '2px 8px', borderRadius: 5,
-  fontSize: '0.7rem', fontWeight: 600, color: '#fff',
-  textAlign: 'center', maxWidth: 76,
-  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  backdropFilter: 'blur(4px)',
-};
-
-const ratingDotStyle: React.CSSProperties = {
-  position: 'absolute', bottom: -1, right: -1,
-  background: '#10b981', border: '2px solid #050a14',
-  borderRadius: '50%', width: 18, height: 18,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontSize: '0.55rem', fontWeight: 800, color: '#fff',
-  lineHeight: 1,
-};
-
-// BUG-7 fix: moved down further so it doesn't overlap the rating dot (which is at bottom:-1, right:-1)
-const quickActionsStyle: React.CSSProperties = {
-  position: 'absolute', bottom: -26, left: '50%', transform: 'translateX(-50%)',
-  background: 'rgba(10,15,28,0.92)', border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 12, padding: '3px 8px',
-  display: 'flex', gap: 8, alignItems: 'center',
-  pointerEvents: 'auto',
-};
-
-const quickBtnStyle: React.CSSProperties = {
-  background: 'none', border: 'none', color: 'var(--text-secondary)',
-  cursor: 'pointer', padding: 2,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-};
-
-const tooltipStyle: React.CSSProperties = {
-  position: 'absolute', bottom: '120%',
-  width: 200, padding: '10px 12px', borderRadius: 12,
-  background: 'rgba(8,12,24,0.97)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-  pointerEvents: 'none',
-  zIndex: 200,
-};
+    );
+  };

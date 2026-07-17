@@ -7,6 +7,7 @@ interface PitchProps {
   activePlayers: Player[];
   pitchTheme: 'classic' | 'night' | 'tactical' | 'neon';
   isDrawingMode: boolean;
+  setIsDrawingMode: (val: boolean) => void;
   brushColor: string;
   brushWidth: number;
   strokes: DrawingStroke[];
@@ -14,6 +15,8 @@ interface PitchProps {
   onPlayerMove: (playerId: string, x: number, y: number) => void;
   onEditPlayer: (player: Player) => void;
   onRemoveFromLineup: (playerId: string) => void;
+  onClear: () => void;
+  onUndo: () => void;
 }
 
 export const Pitch: React.FC<PitchProps> = ({
@@ -21,6 +24,7 @@ export const Pitch: React.FC<PitchProps> = ({
   activePlayers,
   pitchTheme,
   isDrawingMode,
+  setIsDrawingMode,
   brushColor,
   brushWidth,
   strokes,
@@ -28,30 +32,28 @@ export const Pitch: React.FC<PitchProps> = ({
   onPlayerMove,
   onEditPlayer,
   onRemoveFromLineup,
+  onClear,
+  onUndo,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  // BUG-2 fix: keep a ref to the latest strokes so mouse handlers never read stale data
+
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
 
-
-  // Redraw canvas strokes when strokes, theme, or size changes
   const drawStrokes = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear previous drawing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     strokes.forEach((stroke) => {
       if (stroke.points.length < 2) return;
       ctx.beginPath();
       
-      // Convert percentage coordinate back to actual canvas pixels
       const startX = (stroke.points[0].x / 100) * canvas.width;
       const startY = (stroke.points[0].y / 100) * canvas.height;
       ctx.moveTo(startX, startY);
@@ -70,7 +72,6 @@ export const Pitch: React.FC<PitchProps> = ({
     });
   };
 
-  // Adjust canvas resolution to match its element size
   const handleResize = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -80,21 +81,17 @@ export const Pitch: React.FC<PitchProps> = ({
     drawStrokes();
   };
 
-  // BUG-1 fix: resize listener registered only once (empty deps), not on every stroke change
   useEffect(() => {
     handleResize();
     const onResize = () => handleResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Redraw strokes whenever they change or the theme changes
   useEffect(() => {
     drawStrokes();
   }, [strokes, pitchTheme]);
 
-  // DRAWING BOARD HANDLERS
   const getCanvasMousePos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -112,7 +109,6 @@ export const Pitch: React.FC<PitchProps> = ({
       clientY = e.clientY;
     }
 
-    // Convert pixel position to 0-100 percentage coordinates
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
     return {
@@ -124,7 +120,6 @@ export const Pitch: React.FC<PitchProps> = ({
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawingMode) return;
     
-    // Prevent default scroll behaviors on mobile touch
     if ('touches' in e) {
       e.preventDefault();
     }
@@ -149,7 +144,6 @@ export const Pitch: React.FC<PitchProps> = ({
     }
 
     const pos = getCanvasMousePos(e);
-    // BUG-2 fix: read from ref instead of prop to always get the latest strokes
     const latestStrokes = strokesRef.current;
     if (latestStrokes.length === 0) return;
 
@@ -166,22 +160,18 @@ export const Pitch: React.FC<PitchProps> = ({
     setIsDrawing(false);
   };
 
-  // DRAG AND DROP HANDLERS (FOR PLAYERS)
   const handlePlayerPointerDown = (e: React.PointerEvent<HTMLDivElement>, playerId: string) => {
     if (isDrawingMode) return;
     e.preventDefault();
-
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const container = containerRef.current;
       if (!container) return;
       
       const rect = container.getBoundingClientRect();
-      // Calculate coordinates as percentage of pitch bounding box
       const rawX = ((moveEvent.clientX - rect.left) / rect.width) * 100;
       const rawY = ((moveEvent.clientY - rect.top) / rect.height) * 100;
       
-      // Restrict players to field boundaries with a small safety margin
       const x = Math.max(4, Math.min(96, rawX));
       const y = Math.max(4, Math.min(96, rawY));
       
@@ -189,7 +179,6 @@ export const Pitch: React.FC<PitchProps> = ({
     };
 
     const handlePointerUp = () => {
-
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
     };
@@ -198,39 +187,36 @@ export const Pitch: React.FC<PitchProps> = ({
     document.addEventListener('pointerup', handlePointerUp);
   };
 
-  // Theme-specific CSS classes and colors
   const getThemeStyles = () => {
     switch (pitchTheme) {
       case 'night':
         return {
-          containerBg: 'radial-gradient(circle at center, #0e301d 0%, #06140c 100%)',
-          linesColor: 'var(--pitch-night-lines)',
-          grassStyle: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01) 60px, rgba(0,0,0,0.08) 60px, rgba(0,0,0,0.08) 120px)',
-          border: '1px solid rgba(16, 185, 129, 0.15)',
+          containerBg: 'radial-gradient(circle at center, #091a10 0%, #050f09 100%)',
+          linesColor: 'rgba(255, 255, 255, 0.35)',
+          useImage: false,
+          imgSrc: '',
         };
       case 'tactical':
         return {
           containerBg: '#1c1d21',
-          linesColor: 'var(--pitch-tactical-lines)',
-          grassStyle: 'none',
-          border: '1px solid rgba(255,255,255,0.05)',
+          linesColor: 'rgba(255, 255, 255, 0.2)',
+          useImage: false,
+          imgSrc: '',
         };
       case 'neon':
         return {
           containerBg: '#020617',
-          linesColor: 'var(--pitch-neon-lines)',
-          grassStyle: 'none',
-          border: '2px solid #0891b2',
-          boxShadow: '0 0 25px rgba(6, 182, 212, 0.4)',
-          glowAnimation: 'pulseNeon 4s infinite alternate',
+          linesColor: '#06b6d4',
+          useImage: false,
+          imgSrc: '',
         };
       case 'classic':
       default:
         return {
-          containerBg: 'var(--pitch-classic-bg)',
-          linesColor: 'var(--pitch-classic-lines)',
-          grassStyle: 'repeating-linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06) 50px, rgba(255,255,255,0.02) 50px, rgba(255,255,255,0.02) 100px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          containerBg: '#416656',
+          linesColor: 'rgba(255, 255, 255, 0.65)',
+          useImage: true,
+          imgSrc: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAgKsyHd1qDSTzy-qU6IVVtAkaaogSFvNz2ETUbQ1lzLJxXm6WrzKem7n6bR6NuDXVyCZNfy18QTh3W6QVx7f0HPTlrhKgusCJ3xBdpZcnD0NO3e-fkHEHSno644lPzd0VSVDPMMzcGPipY1weygTPTJvzQv2t62YwdCBPaWrR1iAehndrG9QdbJ07oMLTgVvehBYpnSB8ERpr1JNjRb1S4nBRIRmpshO5gkW0Yzn11z4w4RIj5IeOoYAeYHgMlJgbyMTJqChGZu4Lv',
         };
     }
   };
@@ -238,157 +224,118 @@ export const Pitch: React.FC<PitchProps> = ({
   const theme = getThemeStyles();
 
   return (
-    <div
-      ref={containerRef}
-      id="soccer-pitch"
-      className="glass-panel"
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        background: theme.containerBg,
-        border: theme.border,
-        borderRadius: '16px',
-        overflow: 'hidden',
-        boxShadow: theme.boxShadow || '0 10px 30px rgba(0,0,0,0.4)',
-        animation: theme.glowAnimation || 'none',
-        userSelect: 'none',
-      }}
-    >
-      {/* Striped grass overlay */}
-      {theme.grassStyle !== 'none' && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: theme.grassStyle,
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
-        />
-      )}
-
-      {/* Soccer Field Lines SVG Overlay */}
-      <svg
-        viewBox="0 0 100 100"
+    <main className="flex-1 bg-surface-container-low p-md flex flex-col relative overflow-hidden h-full">
+      {/* Soccer Pitch Canvas Card */}
+      <div 
+        ref={containerRef}
+        id="soccer-pitch"
+        className="flex-1 rounded-xl relative shadow-sm border border-outline-variant overflow-hidden flex items-center justify-center"
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          color: theme.linesColor,
-          zIndex: 2,
+          background: theme.containerBg,
         }}
       >
-        {/* Outer Border */}
-        <rect x="4" y="4" width="92" height="92" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        
-        {/* Midfield Line */}
-        <line x1="4" y1="50" x2="96" y2="50" stroke="currentColor" strokeWidth="0.5" />
-        
-        {/* Center Circle */}
-        <circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <circle cx="50" cy="50" r="0.6" fill="currentColor" />
-
-        {/* Penalty Area Top */}
-        <rect x="22" y="4" width="56" height="16" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <rect x="36" y="4" width="28" height="5" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <circle cx="50" cy="14" r="0.5" fill="currentColor" />
-        {/* Arc Top */}
-        <path d="M 40 20 A 10 10 0 0 0 60 20" fill="none" stroke="currentColor" strokeWidth="0.5" />
-
-        {/* Penalty Area Bottom */}
-        <rect x="22" y="80" width="56" height="16" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <rect x="36" y="91" width="28" height="5" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <circle cx="50" cy="86" r="0.5" fill="currentColor" />
-        {/* Arc Bottom */}
-        <path d="M 40 80 A 10 10 0 0 1 60 80" fill="none" stroke="currentColor" strokeWidth="0.5" />
-
-        {/* Corner Arcs */}
-        <path d="M 4 8 A 4 4 0 0 0 8 4" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <path d="M 92 4 A 4 4 0 0 0 96 8" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <path d="M 4 92 A 4 4 0 0 0 8 96" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        <path d="M 92 96 A 4 4 0 0 0 96 92" fill="none" stroke="currentColor" strokeWidth="0.5" />
-
-        {/* Goals */}
-        <rect x="42" y="2" width="16" height="2" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.6" />
-        <rect x="42" y="96" width="16" height="2" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.6" />
-      </svg>
-
-      {/* Chalkboard Drawing Canvas Overlay */}
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 5,
-          cursor: isDrawingMode ? 'crosshair' : 'default',
-          touchAction: 'none',
-        }}
-        onMouseDown={handleCanvasMouseDown}
-        onMouseMove={handleCanvasMouseMove}
-        onMouseUp={handleCanvasMouseUp}
-        onMouseLeave={handleCanvasMouseUp}
-        onTouchStart={handleCanvasMouseDown}
-        onTouchMove={handleCanvasMouseMove}
-        onTouchEnd={handleCanvasMouseUp}
-      />
-
-      {/* Render Players */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 6,
-          pointerEvents: isDrawingMode ? 'none' : 'auto',
-        }}
-      >
-        {team.lineup.map((pos) => {
-          const player = activePlayers.find((p) => p.id === pos.playerId);
-          if (!player) return null;
-
-          return (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              x={pos.x}
-              y={pos.y}
-              onPointerDown={handlePlayerPointerDown}
-              onEdit={onEditPlayer}
-              onRemoveFromLineup={onRemoveFromLineup}
-              isDrawingMode={isDrawingMode}
+        {/* Pitch Background Image */}
+        {theme.useImage && theme.imgSrc && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <img 
+              src={theme.imgSrc} 
+              alt="Soccer pitch background" 
+              className="w-full h-full object-cover" 
             />
-          );
-        })}
-      </div>
-      
-      {/* Empty pitch state helper text */}
-      {team.lineup.length === 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 3,
-          color: 'rgba(255,255,255,0.3)',
-          textAlign: 'center',
-          fontSize: '0.9rem',
-          maxWidth: '300px',
-        }}>
-          La cancha está vacía.<br/>Selecciona una formación o arrastra jugadores desde la banca en el panel lateral.
+          </div>
+        )}
+
+        {/* Soccer Field Lines SVG Overlay */}
+        <svg 
+          className="absolute inset-4 w-[calc(100%-32px)] h-[calc(100%-32px)] pointer-events-none text-white" 
+          preserveAspectRatio="none"
+          style={{ color: theme.linesColor }}
+        >
+          <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
+          <line x1="50%" y1="0" x2="50%" y2="100%" stroke="currentColor" strokeWidth="2"></line>
+          <circle cx="50%" cy="50%" r="15%" fill="none" stroke="currentColor" strokeWidth="2"></circle>
+          <rect x="0" y="20%" width="16.5%" height="60%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
+          <rect x="83.5%" y="20%" width="16.5%" height="60%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
+          <rect x="0" y="35%" width="5.5%" height="30%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
+          <rect x="94.5%" y="35%" width="5.5%" height="30%" fill="none" stroke="currentColor" strokeWidth="2"></rect>
+        </svg>
+
+        {/* Chalkboard Drawing Canvas Overlay */}
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full z-10"
+          style={{
+            cursor: isDrawingMode ? 'crosshair' : 'default',
+            touchAction: 'none',
+          }}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseUp}
+          onTouchStart={handleCanvasMouseDown}
+          onTouchMove={handleCanvasMouseMove}
+          onTouchEnd={handleCanvasMouseUp}
+        />
+
+        {/* Render Players */}
+        <div className="absolute inset-0 w-full h-full z-20" style={{ pointerEvents: isDrawingMode ? 'none' : 'auto' }}>
+          {team.lineup.map((pos) => {
+            const player = activePlayers.find((p) => p.id === pos.playerId);
+            if (!player) return null;
+
+            return (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                x={pos.x}
+                y={pos.y}
+                onPointerDown={handlePlayerPointerDown}
+                onEdit={onEditPlayer}
+                onRemoveFromLineup={onRemoveFromLineup}
+                isDrawingMode={isDrawingMode}
+              />
+            );
+          })}
         </div>
-      )}
-    </div>
+
+        {/* Empty pitch state helper text */}
+        {team.lineup.length === 0 && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 text-white/50 text-center font-semibold text-sm max-w-[280px]">
+            La cancha está vacía.<br/>Selecciona una formación o arrastra jugadores desde la banca en el panel lateral.
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Navigation / Tools Bar */}
+      <nav className="mt-md bg-surface shadow-sm rounded-xl px-lg py-sm flex justify-center gap-xl border border-outline-variant shrink-0 z-30">
+        <button 
+          onClick={() => setIsDrawingMode(!isDrawingMode)}
+          className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all active:scale-95 duration-150 w-16 ${
+            isDrawingMode ? 'text-primary bg-secondary-container/40' : 'text-on-surface-variant hover:bg-surface-container-highest'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">edit</span>
+          <span className="font-label-sm text-label-sm mt-1">Lápiz</span>
+        </button>
+        
+        <button 
+          onClick={onUndo}
+          disabled={strokes.length === 0}
+          className="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all active:scale-95 duration-150 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed w-16"
+        >
+          <span className="material-symbols-outlined text-2xl">undo</span>
+          <span className="font-label-sm text-label-sm mt-1">Deshacer</span>
+        </button>
+
+        <button 
+          onClick={onClear}
+          disabled={strokes.length === 0}
+          className="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all active:scale-95 duration-150 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed w-16"
+        >
+          <span className="material-symbols-outlined text-2xl">layers_clear</span>
+          <span className="font-label-sm text-label-sm mt-1">Limpiar</span>
+        </button>
+      </nav>
+    </main>
   );
 };

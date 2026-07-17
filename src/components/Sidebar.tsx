@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
-import { Search, UserPlus, ShieldAlert, Star, Layers, Users } from 'lucide-react';
 import type { Player, Team } from '../types';
 import { FORMATION_PRESETS } from '../utils/formations';
 import { DrawingTools } from './DrawingTools';
 import { TeamSelector } from './TeamSelector';
 
-// ─────────────────────────────────────────────
-//  Types
-// ─────────────────────────────────────────────
 interface SidebarProps {
   team: Team;
   onApplyPreset: (formationName: string) => void;
@@ -43,9 +39,6 @@ type MainTab = 'tactics' | 'squad';
 type SquadFilter = 'ALL' | 'GK' | 'DF' | 'MF' | 'FW';
 type SquadTab = 'all' | 'lineup' | 'bench';
 
-// ─────────────────────────────────────────────
-//  Component
-// ─────────────────────────────────────────────
 export const Sidebar: React.FC<SidebarProps> = ({
   team, onApplyPreset, onAddPlayer, onEditPlayer, onDeletePlayer, onTogglePlayerLineup,
   pitchTheme, setPitchTheme,
@@ -53,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClearDrawings, onUndoDrawing, strokesCount,
   teams, activeTeamId, onSelectTeam, onCreateTeam, onDeleteTeam, onUpdateTeamDetails, onExportData, onImportData,
 }) => {
-  const [mainTab, setMainTab] = useState<MainTab>('tactics');
+  const [mainTab, setMainTab] = useState<MainTab>('squad'); // Default to squad tab
   const [search, setSearch] = useState('');
   const [posFilter, setPosFilter] = useState<SquadFilter>('ALL');
   const [squadTab, setSquadTab] = useState<SquadTab>('all');
@@ -77,42 +70,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ] as const;
 
   const posLabels: Record<SquadFilter, string> = { ALL: 'Todos', GK: 'POR', DF: 'DEF', MF: 'MED', FW: 'DEL' };
-  const posColors: Record<string, string> = { GK: '#f59e0b', DF: '#3b82f6', MF: '#10b981', FW: '#ef4444' };
+  const posColors: Record<string, string> = { GK: '#f59e0b', DF: '#ef4444', MF: '#10b981', FW: '#3b82f6' };
 
   return (
-    <aside style={sidebarShell}>
-      {/* ── Brand ── */}
-      <div style={brandBar}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={brandIcon}>⚽</span>
-          <div>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1.15rem', color: '#fff', lineHeight: 1.1 }}>
-              Tactix
-            </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Soccer Formation Designer</div>
-          </div>
-        </div>
+    <aside className="w-[380px] bg-surface border-l border-outline-variant flex flex-col shrink-0 h-full overflow-hidden shadow-sm z-20">
+      {/* ── Sidebar Tabs ── */}
+      <div className="flex border-b border-outline-variant">
+        <button 
+          onClick={() => setMainTab('tactics')}
+          className={`flex-1 py-md font-label-lg text-label-lg flex items-center justify-center gap-sm transition-colors border-b-2 ${
+            mainTab === 'tactics' 
+              ? 'text-primary font-bold border-primary bg-surface-bright' 
+              : 'text-on-surface-variant hover:bg-surface-variant/50 border-transparent'
+          }`}
+        >
+          <span className="material-symbols-outlined text-lg">strategy</span>
+          Tácticas
+        </button>
+        <button 
+          onClick={() => setMainTab('squad')}
+          className={`flex-1 py-md font-label-lg text-label-lg flex items-center justify-center gap-sm transition-colors border-b-2 ${
+            mainTab === 'squad' 
+              ? 'text-primary font-bold border-primary bg-surface-bright' 
+              : 'text-on-surface-variant hover:bg-surface-variant/50 border-transparent'
+          }`}
+        >
+          <span className="material-symbols-outlined text-lg">groups</span>
+          Plantilla 
+          <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full text-xs font-semibold ml-1">
+            {lineupCount}/11
+          </span>
+        </button>
       </div>
 
-      {/* ── Main tab switcher ── */}
-      <div style={mainTabBar}>
-        <button style={mainTabBtn(mainTab === 'tactics')} onClick={() => setMainTab('tactics')}>
-          <Layers size={14} /> Tácticas
-        </button>
-        <button style={mainTabBtn(mainTab === 'squad')} onClick={() => setMainTab('squad')}>
-          <Users size={14} /> Plantilla
-          <span style={badgePill(lineupCount >= 11 ? '#10b981' : '#64748b')}>{lineupCount}/11</span>
-        </button>
-      </div>
-
-      {/* ── Scrollable body ── */}
-      <div style={scrollBody}>
+      {/* ── Scrollable Body ── */}
+      <div className="flex-1 overflow-y-auto p-md flex flex-col gap-lg bg-surface-bright">
 
         {/* ════════ TÁCTICAS TAB ════════ */}
         {mainTab === 'tactics' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-            {/* Team management */}
+          <div className="flex flex-col gap-md">
+            {/* Team Management */}
             <TeamSelector
               teams={teams} activeTeamId={activeTeamId}
               onSelectTeam={onSelectTeam} onCreateTeam={onCreateTeam}
@@ -120,39 +117,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onExportData={onExportData} onImportData={onImportData}
             />
 
-            {/* Pitch themes */}
-            <div style={card}>
-              <div style={cardTitle}>🎨 Estilo de Cancha</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {/* Pitch Themes */}
+            <div className="bg-surface rounded-xl p-md border border-outline-variant shadow-sm">
+              <div className="font-title-lg text-title-lg text-on-surface mb-sm">🎨 Estilo de Cancha</div>
+              <div className="grid grid-cols-2 gap-2">
                 {PITCH_THEMES.map(t => (
-                  <button key={t.id} onClick={() => setPitchTheme(t.id)}
-                    style={themeBtn(pitchTheme === t.id)}>
+                  <button 
+                    key={t.id} 
+                    onClick={() => setPitchTheme(t.id)}
+                    className={`py-1.5 px-3 rounded-lg text-label-sm font-label-sm flex items-center gap-sm transition-all border ${
+                      pitchTheme === t.id 
+                        ? 'border-primary bg-secondary-container text-on-secondary-container' 
+                        : 'border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-variant/50'
+                    }`}
+                  >
                     <span>{t.emoji}</span> {t.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Formation presets */}
-            <div style={card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={cardTitle}>⚽ Formaciones</div>
-                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>
+            {/* Formation Presets */}
+            <div className="bg-surface rounded-xl p-md border border-outline-variant shadow-sm">
+              <div className="flex justify-between items-center mb-sm">
+                <div className="font-title-lg text-title-lg text-on-surface">⚽ Formaciones</div>
+                <span className="font-label-sm text-label-sm text-primary font-bold">
                   {team.formationName || '—'}
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
+              <div className="grid grid-cols-5 gap-1.5">
                 {Object.keys(FORMATION_PRESETS).map(name => {
                   const active = team.formationName === name;
                   return (
-                    <button key={name} onClick={() => onApplyPreset(name)}
-                      style={{
-                        padding: '7px 2px', borderRadius: 8, fontSize: '0.7rem', fontWeight: 700,
-                        border: active ? '1.5px solid #10b981' : '1px solid rgba(255,255,255,0.07)',
-                        background: active ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.02)',
-                        color: active ? '#34d399' : 'var(--text-secondary)', cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}>
+                    <button 
+                      key={name} 
+                      onClick={() => onApplyPreset(name)}
+                      className={`py-1 px-0.5 rounded text-[11px] font-bold border transition-colors ${
+                        active 
+                          ? 'border-primary bg-secondary-container text-on-secondary-container' 
+                          : 'border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-variant/50'
+                      }`}
+                    >
                       {name}
                     </button>
                   );
@@ -160,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
 
-            {/* Drawing tools */}
+            {/* Drawing Tools */}
             <DrawingTools
               isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
               brushColor={brushColor} setBrushColor={setBrushColor}
@@ -172,129 +177,173 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* ════════ PLANTILLA TAB ════════ */}
         {mainTab === 'squad' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-            {/* Header row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          <div className="flex flex-col gap-md">
+            {/* Header & Add Button */}
+            <div className="flex justify-between items-center">
+              <h2 className="font-title-lg text-title-lg text-on-surface">
                 {team.players.length} jugadores en plantilla
-              </span>
-              <button onClick={onAddPlayer} className="btn btn-primary"
-                style={{ padding: '7px 14px', fontSize: '0.78rem', display: 'flex', gap: 6, alignItems: 'center' }}>
-                <UserPlus size={14} /> Nuevo Jugador
+              </h2>
+              <button 
+                onClick={onAddPlayer}
+                className="bg-primary text-on-primary font-label-lg text-label-lg px-md py-sm rounded-lg flex items-center gap-sm hover:bg-primary-container transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-sm">person_add</span>
+                Nuevo Jugador
               </button>
             </div>
 
             {/* Search */}
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input className="form-input" placeholder="Buscar por nombre o dorsal…" value={search}
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+              <input 
+                className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-2 font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-shadow placeholder:text-outline"
+                placeholder="Buscar por nombre o dorsal..." 
+                type="text"
+                value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ paddingLeft: 32, fontSize: '0.82rem' }} />
+              />
             </div>
 
-            {/* Position filter pills */}
-            <div style={{ display: 'flex', gap: 5 }}>
-              {(Object.keys(posLabels) as SquadFilter[]).map(pos => (
-                <button key={pos} onClick={() => setPosFilter(pos)}
-                  style={{
-                    flex: 1, padding: '5px 2px', borderRadius: 8, fontSize: '0.65rem', fontWeight: 700,
-                    border: posFilter === pos ? `1.5px solid ${posColors[pos] ?? '#10b981'}` : '1px solid rgba(255,255,255,0.06)',
-                    background: posFilter === pos ? `${posColors[pos] ?? '#10b981'}22` : 'transparent',
-                    color: posFilter === pos ? (posColors[pos] ?? '#10b981') : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                  }}>
-                  {posLabels[pos]}
-                </button>
-              ))}
+            {/* Position Filters */}
+            <div className="flex gap-2">
+              {(Object.keys(posLabels) as SquadFilter[]).map(pos => {
+                const active = posFilter === pos;
+                return (
+                  <button 
+                    key={pos} 
+                    onClick={() => setPosFilter(pos)}
+                    className={`flex-1 font-label-sm text-label-sm py-1.5 rounded-lg border transition-colors ${
+                      active 
+                        ? 'bg-secondary text-on-primary border-secondary' 
+                        : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-variant/50'
+                    }`}
+                  >
+                    {posLabels[pos]}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Squad sub-tabs */}
-            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 3, gap: 2 }}>
-              {([['all', 'Todos'], ['lineup', `Titulares`], ['bench', 'Banca']] as const).map(([id, label]) => (
-                <button key={id} onClick={() => setSquadTab(id)}
-                  style={{
-                    flex: 1, padding: '6px 4px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 600,
-                    border: 'none', cursor: 'pointer',
-                    background: squadTab === id ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: squadTab === id ? '#fff' : 'var(--text-secondary)',
-                    transition: 'all 0.15s',
-                  }}>
-                  {label}
-                  <span style={{ marginLeft: 4, fontSize: '0.6rem', opacity: 0.7 }}>
-                    ({id === 'all' ? team.players.length : id === 'lineup' ? lineupCount : team.players.length - lineupCount})
-                  </span>
-                </button>
-              ))}
+            {/* Status Filters */}
+            <div className="flex bg-surface-container rounded-lg p-1 border border-outline-variant">
+              {([['all', 'Todos', team.players.length], ['lineup', 'Titulares', lineupCount], ['bench', 'Banca', team.players.length - lineupCount]] as const).map(([id, label, count]) => {
+                const active = squadTab === id;
+                return (
+                  <button 
+                    key={id} 
+                    onClick={() => setSquadTab(id)}
+                    className={`flex-1 py-1.5 font-label-sm text-label-sm rounded-md transition-all ${
+                      active 
+                        ? 'bg-surface shadow-sm text-on-surface font-semibold' 
+                        : 'text-on-surface-variant hover:bg-surface-variant/50'
+                    }`}
+                  >
+                    {label} <span className={`${active ? 'text-on-surface' : 'text-on-surface-variant'} font-normal text-xs`}>({count})</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Over-11 warning */}
             {lineupCount > 11 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: '0.75rem', color: '#f87171' }}>
-                <ShieldAlert size={14} /> {lineupCount} titulares. El máximo es 11.
+              <div className="flex items-center gap-2 bg-error-container text-on-error-container border border-error/20 rounded-lg p-3 text-xs animate-fade-in">
+                <span className="material-symbols-outlined text-sm">warning</span>
+                <span>{lineupCount} titulares colocados. El máximo permitido es 11.</span>
               </div>
             )}
 
             {/* Player list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-2">
               {filtered.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '28px 0', fontSize: '0.82rem' }}>
+                <div className="text-center text-on-surface-variant py-10 text-body-md">
                   Sin jugadores que coincidan
                 </div>
               ) : (
                 filtered.map(player => {
                   const inLineup = activeIds.has(player.id);
-                  const posColor = posColors[player.position] ?? '#64748b';
+                  const posBg = player.avatarColor;
                   return (
-                    <div key={player.id} style={playerRow(player.avatarColor)}>
-
-                      {/* Avatar / photo */}
-                      <div style={avatarCircle(player.avatarColor)}>
-                        {player.photoUrl
-                          ? <img src={player.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                          : <span style={{ color: player.textColor, fontWeight: 800, fontSize: '0.85rem' }}>{player.number}</span>
-                        }
-                      </div>
-
-                      {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {player.name}
-                          </span>
-                          <span style={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, color: posColor, background: `${posColor}22`, border: `1px solid ${posColor}44`, borderRadius: 4, padding: '1px 5px' }}>
-                            {player.position}
-                          </span>
+                    <div 
+                      key={player.id} 
+                      className={`flex items-center justify-between p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low transition-colors group ${
+                        !inLineup ? 'opacity-70 hover:opacity-100' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-md">
+                        {/* Avatar/Number */}
+                        <div 
+                          className="w-10 h-10 rounded-full text-white font-bold flex items-center justify-center shrink-0 shadow-sm border-l-4 overflow-hidden bg-white"
+                          style={{
+                            borderLeftColor: posBg || '#64748b',
+                            backgroundColor: player.photoUrl ? '#fff' : posBg
+                          }}
+                        >
+                          {player.photoUrl ? (
+                            <img src={player.photoUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span style={{ color: player.textColor }}>{player.number}</span>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', gap: 10, fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Star size={9} color="#f59e0b" fill="#f59e0b" /> {player.rating}
-                          </span>
-                          <span>#{player.number}</span>
-                          <span style={{ color: inLineup ? '#34d399' : 'var(--text-muted)' }}>
-                            {inLineup ? '● Titular' : '○ Banca'}
-                          </span>
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-label-lg text-label-lg text-on-surface truncate max-w-[140px] block">
+                              {player.name}
+                            </span>
+                            <span 
+                              className="text-[10px] px-1.5 py-0.5 rounded border font-semibold"
+                              style={{
+                                color: posColors[player.position],
+                                borderColor: `${posColors[player.position]}44`,
+                                backgroundColor: `${posColors[player.position]}11`,
+                              }}
+                            >
+                              {player.position}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-on-surface-variant mt-0.5 font-medium">
+                            <span className="flex items-center text-yellow-600">
+                              <span className="material-symbols-outlined text-[12px] mr-[2px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span> 
+                              {player.rating}
+                            </span>
+                            <span>#{player.number}</span>
+                            <span className="flex items-center gap-1">
+                              <div className={`w-1.5 h-1.5 rounded-full ${inLineup ? 'bg-primary' : 'bg-outline'}`}></div>
+                              {inLineup ? 'Titular' : 'Banca'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
-                        <button
+                      <div className="flex items-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
                           onClick={() => onTogglePlayerLineup(player.id)}
-                          title={inLineup ? 'Enviar a banca' : 'Poner como titular'}
-                          aria-label={inLineup ? `Enviar ${player.name} a banca` : `Poner a ${player.name} como titular`}
-                          style={{
-                            padding: '4px 9px', borderRadius: 7, fontSize: '0.68rem', fontWeight: 600,
-                            border: inLineup ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(16,185,129,0.3)',
-                            background: inLineup ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)',
-                            color: inLineup ? '#f87171' : '#34d399', cursor: 'pointer',
-                          }}>
+                          aria-label={inLineup ? 'Enviar a banca' : 'Poner como titular'}
+                          className={`text-xs px-2 py-1 rounded transition-colors font-medium border ${
+                            inLineup 
+                              ? 'border-tertiary-container text-tertiary hover:bg-error-container' 
+                              : 'border-primary text-primary hover:bg-secondary-container'
+                          }`}
+                        >
                           {inLineup ? 'Banca' : 'Titular'}
                         </button>
-                        <button onClick={() => onEditPlayer(player)} title="Editar" aria-label={`Editar a ${player.name}`}
-                          style={iconBtn}>✏️</button>
-                        <button onClick={() => onDeletePlayer(player.id)} title="Eliminar" aria-label={`Eliminar a ${player.name}`}
-                          style={{ ...iconBtn, opacity: 0.75 }}>🗑️</button>
+                        <button 
+                          onClick={() => onEditPlayer(player)} 
+                          title="Editar"
+                          aria-label={`Editar a ${player.name}`}
+                          className="text-outline hover:text-on-surface flex items-center"
+                        >
+                          <span className="material-symbols-outlined text-lg">edit</span>
+                        </button>
+                        <button 
+                          onClick={() => onDeletePlayer(player.id)} 
+                          title="Eliminar"
+                          aria-label={`Eliminar a ${player.name}`}
+                          className="text-outline hover:text-error flex items-center"
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -306,82 +355,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
     </aside>
   );
-};
-
-// ─────────────────────────────────────────────
-//  Style helpers
-// ─────────────────────────────────────────────
-const sidebarShell: React.CSSProperties = {
-  height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-  background: 'rgba(10,15,28,0.85)', backdropFilter: 'blur(20px)',
-  borderLeft: '1px solid rgba(255,255,255,0.07)',
-};
-
-const brandBar: React.CSSProperties = {
-  padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-  flexShrink: 0,
-};
-
-const brandIcon: React.CSSProperties = {
-  background: 'rgba(16,185,129,0.15)', borderRadius: 10,
-  padding: '6px 7px', fontSize: '1.2rem',
-};
-
-const mainTabBar: React.CSSProperties = {
-  display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0,
-};
-
-const mainTabBtn = (active: boolean): React.CSSProperties => ({
-  flex: 1, padding: '11px 8px', border: 'none', cursor: 'pointer', fontSize: '0.82rem',
-  fontWeight: 700, display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center',
-  background: active ? 'rgba(16,185,129,0.07)' : 'transparent',
-  color: active ? '#fff' : 'var(--text-secondary)',
-  borderBottom: active ? '2px solid #10b981' : '2px solid transparent',
-  transition: 'all 0.2s',
-});
-
-const badgePill = (color: string): React.CSSProperties => ({
-  background: `${color}33`, border: `1px solid ${color}66`,
-  color, borderRadius: 20, padding: '1px 7px', fontSize: '0.6rem', fontWeight: 700,
-});
-
-const scrollBody: React.CSSProperties = {
-  flex: 1, overflowY: 'auto', padding: '14px 14px 20px',
-};
-
-const card: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-  borderRadius: 12, padding: '12px 14px',
-};
-
-const cardTitle: React.CSSProperties = {
-  fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)',
-  textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10,
-};
-
-const themeBtn = (active: boolean): React.CSSProperties => ({
-  padding: '8px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600,
-  border: active ? '1.5px solid #10b981' : '1px solid rgba(255,255,255,0.07)',
-  background: active ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.02)',
-  color: active ? '#34d399' : 'var(--text-secondary)', cursor: 'pointer',
-  display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s',
-});
-
-const playerRow = (accentColor: string): React.CSSProperties => ({
-  display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px',
-  background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.04)`,
-  borderLeft: `3px solid ${accentColor}`,
-  borderRadius: 10, transition: 'background 0.15s',
-});
-
-const avatarCircle = (bg: string): React.CSSProperties => ({
-  width: 36, height: 36, borderRadius: '50%', background: bg, flexShrink: 0,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-});
-
-const iconBtn: React.CSSProperties = {
-  background: 'none', border: 'none', cursor: 'pointer',
-  fontSize: '0.8rem', padding: '3px 2px', lineHeight: 1,
 };
